@@ -3,17 +3,14 @@ from bs4 import BeautifulSoup
 import cv2
 import numpy as np
 from datetime import datetime
-
-base_url = "https://panodata8.panomax.com/cams/2527/{year}/{month}/{day}/{hour}-{minute}-{second}_hd_3_0.jpg"
-api_images_url = "https://api.panomax.com/1.0/cams/2527/images/day"
-now = datetime.now()
+import constants
 
 def get_last_snapshot_time():
-    data = requests.get(api_images_url).json()
+    data = requests.get(constants.API_PANOMAX_URL).json()
     return datetime.strptime(data["images"][-1]["time"], "%H:%M:%S")
 
-def format_snapshot_url(url, year, month, day, hour, minute, second):
-        formatted_url = url.format(
+def format_snapshot_url(year, month, day, hour, minute, second):
+        return constants.IMG_BASE_URL.format(
             year=year,
             month=month,
             day=day,
@@ -21,8 +18,12 @@ def format_snapshot_url(url, year, month, day, hour, minute, second):
             minute=minute,
             second=second
         )
-        return formatted_url
-        
+
+def get_snapshot(url):
+    resp = requests.get(url)
+    arr = np.asarray(bytearray(resp.content), dtype=np.uint8)
+    return cv2.imdecode(arr, cv2.IMREAD_COLOR)
+
 def show_snapshot(url):
     resp = requests.get(url)
     arr = np.asarray(bytearray(resp.content), dtype=np.uint8)
@@ -31,44 +32,73 @@ def show_snapshot(url):
     if frame is None:
         print("No se pudo descargar o decodificar la imagen.")
     else:
-        cv2.imshow("Webcam Nordschleife", frame)
+        cv2.imshow("Webcam Nordschleife",
+         frame)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-def get_snapshot(url):
-    resp = requests.get(url)
-    arr = np.asarray(bytearray(resp.content), dtype=np.uint8)
-    return cv2.imdecode(arr, cv2.IMREAD_COLOR)
+def show_frame(frame):
+    if frame is None:
+        print("No se pudo decodificar la imagen.")
+    else:
+        cv2.imshow("Frame", frame)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
-time = get_last_snapshot_time()
-snapshot_url = format_snapshot_url(
-     base_url,
-     now.year,
-     f"{now.month:02d}",
-     f"{now.day:02d}", 
-     f"{time.hour:02d}", 
-     f"{time.minute:02d}", 
-     f"{time.second:02d}")
+def is_weekend(datetime):
+    return datetime.weekday() >= 5
 
-frame = get_snapshot(snapshot_url)
+def get_track_state(roi):
+    # Converting frame to HSV
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 
-# Recortamos la ROI (ejemplo: pixel 100:200, 300:400)
-roi = frame[100:200, 300:400]
+    # Color masks
+    mask_green = cv2.inRange(hsv, constants.LOWER_GREEN_MASK_RANGE, constants.UPPER_GREEN_MASK_RANGE)
+    mask_yellow = cv2.inRange(hsv, constants.LOWER_YELLOW_MASK_RANGE, constants.UPPER_YELLOW_MASK_RANGE)
+    mask_red1 = cv2.inRange(hsv, constants.LOWER_RED1_MASK_RANGE, constants.UPPER_RED1_MASK_RANGE)
+    mask_red2 = cv2.inRange(hsv, constants.LOWER_RED2_MASK_RANGE, constants.UPPER_RED2_MASK_RANGE)
+    mask_red = cv2.bitwise_or(mask_red1, mask_red2)
 
-# Convertir a espacio HSV (mejor para colores)
-hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    if cv2.countNonZero(mask_green) > constants.COLOR_THRESHOLD:
+        state = "Green"
+    elif cv2.countNonZero(mask_yellow) > constants.COLOR_THRESHOLD:
+        state = "Yellow"
+    elif cv2.countNonZero(mask_red) > constants.COLOR_THRESHOLD:
+        state = "Closed"
+    else:
+        state = "Unknown"
+    
+    return state
 
-# Calcular media de color
-mean_color = cv2.mean(hsv)
+def get_roi():
+    last_time = get_last_snapshot_time()
+    snapshot_url = format_snapshot_url(
+        constants.IMG_BASE_URL,
+        now.year,
+        now.month,
+        now.day, 
+        last_time.hour, 
+        last_time.minute, 
+        last_time.second
+        )
 
-h, s, v = mean_color[0], mean_color[1], mean_color[2]
+    frame = get_snapshot(snapshot_url) 
+    return frame[constants.ROI_COORDS]
 
-estado = "Desconocido"
-if 35 < h < 85:   # rango verde en HSV
-    estado = "Abierto"
-elif 20 < h < 35: # rango amarillo
-    estado = "Amarillo"
-elif h < 10 or h > 170: # rango rojo
-    estado = "Cerrado"
+def check_track():
+    if is_weekend(now):
+        if now.hour >= constants.WEEKEND_OPEN_HOUR or now.hour < constants.WEEKEND_CLOSE_HOUR:
+            roi = get_roi()
+            print("Track state:", get_track_state(roi))
+        else:
+            print("Track closed")
+    else:
+        if (now.hour, now.minute) >= constants.WEEKDAY_OPEN_HOUR and (now.hour, now.minute) < constants.WEEKDAY_CLOSE_HOUR:
+            roi = get_roi()
+            print("Track state:", get_track_state(roi))
+        else:
+            print("Track closed")
 
-print("Estado de la pista:", estado)
+if __name__ == "__main__":
+    now = datetime.now()
+    check_track()
