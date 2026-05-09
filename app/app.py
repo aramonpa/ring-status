@@ -1,4 +1,4 @@
-"""Lógica principal para análisis de estado de la pista."""
+"""Core logic for track status analysis."""
 
 import requests
 import cv2
@@ -10,13 +10,13 @@ from app import config as constants
 
 
 def get_last_snapshot_time():
-    """Obtiene el tiempo de la última snapshot disponible."""
+    """Get the time of the last available snapshot."""
     data = requests.get(constants.API_PANOMAX_URL).json()
     return datetime.strptime(data["images"][-1]["time"], "%H:%M:%S")
 
 
 def format_snapshot_url(year, month, day, hour, minute, second):
-    """Formatea la URL de la snapshot con los parámetros dados."""
+    """Format the snapshot URL with the given parameters."""
     return constants.IMG_BASE_URL.format(
         year=year,
         month=month,
@@ -28,20 +28,20 @@ def format_snapshot_url(year, month, day, hour, minute, second):
 
 
 def get_snapshot(url):
-    """Descarga y decodifica una imagen desde una URL."""
+    """Download and decode an image from a URL."""
     resp = requests.get(url)
     arr = np.asarray(bytearray(resp.content), dtype=np.uint8)
     return cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
 
 def show_snapshot(url):
-    """Descarga y muestra una snapshot en ventana."""
+    """Download and display a snapshot in a window."""
     resp = requests.get(url)
     arr = np.asarray(bytearray(resp.content), dtype=np.uint8)
     frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
     if frame is None:
-        print("No se pudo descargar o decodificar la imagen.")
+        print("Could not download or decode the image.")
     else:
         cv2.imshow("Webcam Nordschleife", frame)
         cv2.waitKey(0)
@@ -49,9 +49,9 @@ def show_snapshot(url):
 
 
 def show_frame(frame):
-    """Muestra un frame en ventana."""
+    """Display a frame in a window."""
     if frame is None:
-        print("No se pudo decodificar la imagen.")
+        print("Could not decode the image.")
     else:
         cv2.imshow("Frame", frame)
         cv2.waitKey(0)
@@ -59,16 +59,16 @@ def show_frame(frame):
 
 
 def is_weekend(dt):
-    """Verifica si una fecha corresponde a fin de semana."""
+    """Check if a date is a weekend."""
     return dt.weekday() >= 5
 
 
 def get_track_state(roi):
-    """Detecta el estado de la pista analizando los colores del semáforo."""
-    # Convertir frame a HSV
+    """Detect track state by analyzing traffic light colors."""
+    # Convert frame to HSV
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
 
-    # Máscaras de color
+    # Color masks
     mask_green = cv2.inRange(
         hsv,
         constants.LOWER_GREEN_MASK_RANGE,
@@ -104,7 +104,7 @@ def get_track_state(roi):
 
 
 def get_roi():
-    """Obtiene la región de interés (ROI) de la snapshot actual."""
+    """Get the region of interest (ROI) from the current snapshot."""
     last_time = get_last_snapshot_time()
     now = datetime.now()
     snapshot_url = format_snapshot_url(
@@ -124,7 +124,7 @@ def get_roi():
 
 
 def check_track():
-    """Verifica el estado de la pista según horarios y obtiene su estado."""
+    """Check track status according to operating hours."""
     now = datetime.now()
 
     if is_weekend(now):

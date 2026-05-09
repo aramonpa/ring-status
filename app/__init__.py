@@ -1,4 +1,4 @@
-"""Ring Status - Monitor del estado de la pista Nordschleife."""
+"""Ring Status - Nordschleife track status monitor."""
 
 __version__ = "0.1.0"
 __author__ = "Alejandro"

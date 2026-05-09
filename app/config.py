@@ -1,20 +1,20 @@
-"""Configuración de Ring Status."""
+"""Ring Status configuration."""
 
 # URLs
 IMG_BASE_URL = "https://panodata8.panomax.com/cams/2527/{year}/{month}/{day}/{hour}-{minute}-{second}_hd_3_0.jpg"
 API_PANOMAX_URL = "https://api.panomax.com/1.0/cams/2527/images/day"
 
-# Horarios de operación
+# Operating hours
 WEEKDAY_OPEN_HOUR = (17, 30)  # 17:30
 WEEKDAY_CLOSE_HOUR = (19, 0)  # 19:00
 
 WEEKEND_OPEN_HOUR = (8, 0)    # 08:00
 WEEKEND_CLOSE_HOUR = (19, 0)  # 19:00
 
-# ROI de la snapshot (y1:y2, x1:x2)
+# ROI of snapshot (y1:y2, x1:x2)
 ROI_COORDS = (432, 464, 848, 896)
 
-# Rango de máscaras HSV
+# HSV mask ranges
 LOWER_GREEN_MASK_RANGE = (35, 50, 50)
 UPPER_GREEN_MASK_RANGE = (85, 255, 255)
 LOWER_YELLOW_MASK_RANGE = (20, 50, 50)
@@ -24,5 +24,5 @@ UPPER_RED1_MASK_RANGE = (10, 255, 255)
 LOWER_RED2_MASK_RANGE = (170, 50, 50)
 UPPER_RED2_MASK_RANGE = (180, 255, 255)
 
-# Umbral de píxeles detectados
+# Pixel detection threshold
 COLOR_THRESHOLD = 50

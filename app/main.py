@@ -1,15 +1,15 @@
-"""Punto de entrada de la aplicación."""
+"""Application entry point."""
 
 import sys
 from app.app import check_track
 
 
 def main():
-    """Función principal."""
+    """Main function."""
     try:
         check_track()
     except KeyboardInterrupt:
-        print("\nAplicación interrumpida por el usuario.")
+        print("\nApplication interrupted by user.")
         sys.exit(0)
     except Exception as e:
         print(f"Error: {e}")
