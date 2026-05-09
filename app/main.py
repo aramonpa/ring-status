@@ -1,7 +1,7 @@
 """Application entry point."""
 
 import sys
-from app.app import check_track
+from app import check_track
 
 
 def main():

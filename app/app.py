@@ -4,20 +4,19 @@ import requests
 import cv2
 import numpy as np
 from datetime import datetime
-from bs4 import BeautifulSoup
-
-from app import config as constants
+import config
 
 
-def get_last_snapshot_time():
+def get_last_snapshot_metadata():
     """Get the time of the last available snapshot."""
-    data = requests.get(constants.API_PANOMAX_URL).json()
-    return datetime.strptime(data["images"][-1]["time"], "%H:%M:%S")
+    data = requests.get(config.API_PANOMAX_URL).json()
+    return datetime.strptime(data["date"], "%Y-%m-%d"), datetime.strptime(data["images"][-1]["time"], "%H:%M:%S")
+
 
 
 def format_snapshot_url(year, month, day, hour, minute, second):
     """Format the snapshot URL with the given parameters."""
-    return constants.IMG_BASE_URL.format(
+    return config.IMG_BASE_URL.format(
         year=year,
         month=month,
         day=day,
@@ -71,31 +70,31 @@ def get_track_state(roi):
     # Color masks
     mask_green = cv2.inRange(
         hsv,
-        constants.LOWER_GREEN_MASK_RANGE,
-        constants.UPPER_GREEN_MASK_RANGE
+        config.LOWER_GREEN_MASK_RANGE,
+        config.UPPER_GREEN_MASK_RANGE
     )
     mask_yellow = cv2.inRange(
         hsv,
-        constants.LOWER_YELLOW_MASK_RANGE,
-        constants.UPPER_YELLOW_MASK_RANGE
+        config.LOWER_YELLOW_MASK_RANGE,
+        config.UPPER_YELLOW_MASK_RANGE
     )
     mask_red1 = cv2.inRange(
         hsv,
-        constants.LOWER_RED1_MASK_RANGE,
-        constants.UPPER_RED1_MASK_RANGE
+        config.LOWER_RED1_MASK_RANGE,
+        config.UPPER_RED1_MASK_RANGE
     )
     mask_red2 = cv2.inRange(
         hsv,
-        constants.LOWER_RED2_MASK_RANGE,
-        constants.UPPER_RED2_MASK_RANGE
+        config.LOWER_RED2_MASK_RANGE,
+        config.UPPER_RED2_MASK_RANGE
     )
     mask_red = cv2.bitwise_or(mask_red1, mask_red2)
 
-    if cv2.countNonZero(mask_green) > constants.COLOR_THRESHOLD:
+    if cv2.countNonZero(mask_green) > config.COLOR_THRESHOLD:
         state = "Green"
-    elif cv2.countNonZero(mask_yellow) > constants.COLOR_THRESHOLD:
+    elif cv2.countNonZero(mask_yellow) > config.COLOR_THRESHOLD:
         state = "Yellow"
-    elif cv2.countNonZero(mask_red) > constants.COLOR_THRESHOLD:
+    elif cv2.countNonZero(mask_red) > config.COLOR_THRESHOLD:
         state = "Closed"
     else:
         state = "Unknown"
@@ -105,21 +104,19 @@ def get_track_state(roi):
 
 def get_roi():
     """Get the region of interest (ROI) from the current snapshot."""
-    last_time = get_last_snapshot_time()
-    now = datetime.now()
+    snapshot_date, last_snapshot_time = get_last_snapshot_metadata()
     snapshot_url = format_snapshot_url(
-        now.year,
-        now.month,
-        now.day,
-        last_time.hour,
-        last_time.minute,
-        last_time.second
+        snapshot_date.year,
+        snapshot_date.month,
+        snapshot_date.day,
+        last_snapshot_time.hour,
+        last_snapshot_time.minute,
+        last_snapshot_time.second
     )
-
     frame = get_snapshot(snapshot_url)
     return frame[
-        constants.ROI_COORDS[0]:constants.ROI_COORDS[1],
-        constants.ROI_COORDS[2]:constants.ROI_COORDS[3]
+        config.ROI_COORDS[0]:config.ROI_COORDS[1],
+        config.ROI_COORDS[2]:config.ROI_COORDS[3]
     ]
 
 
@@ -128,15 +125,15 @@ def check_track():
     now = datetime.now()
 
     if is_weekend(now):
-        if (now.hour >= constants.WEEKEND_OPEN_HOUR[0] or
-                now.hour < constants.WEEKEND_CLOSE_HOUR[0]):
+        if (now.hour >= config.WEEKEND_OPEN_HOUR[0] and
+                now.hour < config.WEEKEND_CLOSE_HOUR[0]):
             roi = get_roi()
             print("Track state:", get_track_state(roi))
         else:
             print("Track closed")
     else:
-        if ((now.hour, now.minute) >= constants.WEEKDAY_OPEN_HOUR and
-                (now.hour, now.minute) < constants.WEEKDAY_CLOSE_HOUR):
+        if ((now.hour, now.minute) >= config.WEEKDAY_OPEN_HOUR and
+                (now.hour, now.minute) < config.WEEKDAY_CLOSE_HOUR):
             roi = get_roi()
             print("Track state:", get_track_state(roi))
         else:

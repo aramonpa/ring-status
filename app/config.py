@@ -1,7 +1,7 @@
 """Ring Status configuration."""
 
 # URLs
-IMG_BASE_URL = "https://panodata8.panomax.com/cams/2527/{year}/{month}/{day}/{hour}-{minute}-{second}_hd_3_0.jpg"
+IMG_BASE_URL = "https://panodata9.panomax.com/cams/2527/{year}/{month:02d}/{day:02d}/{hour:02d}-{minute:02d}-{second:02d}_hd_3_0.jpg"
 API_PANOMAX_URL = "https://api.panomax.com/1.0/cams/2527/images/day"
 
 # Operating hours
