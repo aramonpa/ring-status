@@ -1,7 +1,7 @@
 """Tests for the app module."""
 
 import pytest
-from app.app import is_weekend, format_snapshot_url
+from app.api.app import is_weekend, format_snapshot_url
 from datetime import datetime
 
 
