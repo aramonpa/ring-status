@@ -16,7 +16,7 @@ async def health_check():
 @router.get("/track-status", response_model=TrackStatusResponse)
 async def track_status() -> TrackStatusResponse:
     try:
-        status = track_status_service.get_track_status()
+        status = track_status_service.check_track_status()
         return status
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error occurred: {str(e)}")
