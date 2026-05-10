@@ -139,4 +139,4 @@ class TrackStatusService:
                 print("Track closed")
 
 # Global instance of the track status service
-track_status = TrackStatusService()
+track_status_service = TrackStatusService()
